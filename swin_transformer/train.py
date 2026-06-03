@@ -1,6 +1,9 @@
 import os
 import argparse
 
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
 import torch
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
@@ -63,6 +66,7 @@ def main(args):
                                                shuffle=True,
                                                pin_memory=True,
                                                num_workers=nw,
+                                               persistent_workers=True,
                                                collate_fn=train_dataset.collate_fn)
 
     val_loader = torch.utils.data.DataLoader(val_dataset,
