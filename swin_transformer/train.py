@@ -43,6 +43,16 @@ def main(args):
                             transform=data_transform["val"])
 
     batch_size = args.batch_size
+    if batch_size is None:
+        if device.type == "cuda":
+            total_mem_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
+            if total_mem_gb > 7:       batch_size = 32
+            elif total_mem_gb >= 3.5:  batch_size = 16
+            else:                      batch_size = 8
+            print(f"Auto-detected batch_size: {batch_size} (GPU mem: {total_mem_gb:.1f}GB)")
+        else:
+            batch_size = 8
+            print(f"Default batch_size: {batch_size} (CPU mode)")
     nw = min([os.cpu_count() or 1, batch_size if batch_size > 1 else 0, 8])  # number of workers
     print('Using {} dataloader workers every process'.format(nw))
     train_loader = torch.utils.data.DataLoader(train_dataset,
@@ -66,12 +76,21 @@ def main(args):
     if args.resume:
         assert os.path.exists(args.resume), "resume file: '{}' not exist.".format(args.resume)
         checkpoint = torch.load(args.resume, map_location=device)
-        model.load_state_dict(checkpoint["model"])
-        start_epoch = checkpoint["epoch"] + 1
-        print("Resumed from checkpoint: '{}' (epoch {})".format(args.resume, checkpoint["epoch"]))
+        if "model" not in checkpoint:
+            import re
+            match = re.search(r'model-(\d+)\.pth', args.resume)
+            epoch = int(match.group(1)) if match else -1
+            state = {"model": checkpoint, "epoch": epoch}
+        else:
+            state = checkpoint
+        model.load_state_dict(state["model"])
+        start_epoch = state["epoch"] + 1
+        print("Resumed from checkpoint: '{}' (epoch {})".format(args.resume, state["epoch"]))
     elif args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
-        weights_dict = torch.load(args.weights, map_location=device)["model"]
+        weights_dict = torch.load(args.weights, map_location=device)
+        if "model" in weights_dict:
+            weights_dict = weights_dict["model"]
         # 删除有关分类类别的权重
         for k in list(weights_dict.keys()):
             if "head" in k:
@@ -91,7 +110,16 @@ def main(args):
 
     if args.resume:
         assert checkpoint is not None
-        optimizer.load_state_dict(checkpoint["optimizer"])
+        if "optimizer" in checkpoint:
+            optimizer.load_state_dict(checkpoint["optimizer"])  # type: ignore[arg-type]
+
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+
+    if args.resume:
+        assert checkpoint is not None
+        if "scheduler" in checkpoint:
+            scheduler.load_state_dict(checkpoint["scheduler"])  # type: ignore[arg-type]
+            scheduler.T_max = args.epochs
 
     for epoch in range(start_epoch, args.epochs):
         # train
@@ -117,15 +145,18 @@ def main(args):
         torch.save({
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
+            "scheduler": scheduler.state_dict(),
             "epoch": epoch,
         }, "./weights/model-{}.pth".format(epoch))
+
+        scheduler.step()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_classes', type=int, default=5)
     parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--batch-size', type=int, default=8)
+    parser.add_argument('--batch-size', type=int, default=None)
     parser.add_argument('--lr', type=float, default=0.0001)
 
     # 数据集所在根目录
