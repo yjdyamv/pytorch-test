@@ -99,7 +99,7 @@ def main(args):
                             images_class=val_images_label,
                             transform=data_transform["val"])
 
-    nw = min([os.cpu_count(), args.batch_size if args.batch_size > 1 else 0, 8])  # number of workers
+    nw = min([os.cpu_count() or 1, args.batch_size if args.batch_size > 1 else 0, 8])  # number of workers
     print('Using {} dataloader workers every process'.format(nw))
 
     val_loader = torch.utils.data.DataLoader(val_dataset,

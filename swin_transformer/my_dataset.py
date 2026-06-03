@@ -14,12 +14,12 @@ class MyDataSet(Dataset):
     def __len__(self):
         return len(self.images_path)
 
-    def __getitem__(self, item):
-        img = Image.open(self.images_path[item])
+    def __getitem__(self, index):
+        img = Image.open(self.images_path[index])
         # RGB为彩色图片，L为灰度图片
         if img.mode != 'RGB':
-            raise ValueError("image: {} isn't RGB mode.".format(self.images_path[item]))
-        label = self.images_class[item]
+            raise ValueError("image: {} isn't RGB mode.".format(self.images_path[index]))
+        label = self.images_class[index]
 
         if self.transform is not None:
             img = self.transform(img)

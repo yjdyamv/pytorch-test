@@ -27,7 +27,7 @@ def main():
     # [N, C, H, W]
     img = data_transform(img)
     # expand batch dimension
-    img = torch.unsqueeze(img, dim=0)
+    img = torch.unsqueeze(img, dim=0)  # type: ignore[arg-type]
 
     # read class_indict
     json_path = './class_indices.json'

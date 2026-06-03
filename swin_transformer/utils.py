@@ -124,6 +124,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch):
 
     sample_num = 0
     data_loader = tqdm(data_loader, file=sys.stdout)
+    step = 0
     for step, data in enumerate(data_loader):
         images, labels = data
         sample_num += images.shape[0]
@@ -161,6 +162,7 @@ def evaluate(model, data_loader, device, epoch):
 
     sample_num = 0
     data_loader = tqdm(data_loader, file=sys.stdout)
+    step = 0
     for step, data in enumerate(data_loader):
         images, labels = data
         sample_num += images.shape[0]
