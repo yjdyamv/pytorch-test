@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 import numpy as np
-from typing import Optional
+from typing import Optional, Union
 
 
 def drop_path_f(x, drop_prob: float = 0., training: bool = False):
@@ -37,12 +37,12 @@ def drop_path_f(x, drop_prob: float = 0., training: bool = False):
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
     """
-    def __init__(self, drop_prob=None):
+    def __init__(self, drop_prob: Optional[float] = None):
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
 
     def forward(self, x):
-        return drop_path_f(x, self.drop_prob, self.training)
+        return drop_path_f(x, self.drop_prob if self.drop_prob is not None else 0., self.training)
 
 
 def window_partition(x, window_size: int):
@@ -257,7 +257,9 @@ class WindowAttention(nn.Module):
         attn = (q @ k.transpose(-2, -1))
 
         # relative_position_bias_table.view: [Mh*Mw*Mh*Mw,nH] -> [Mh*Mw,Mh*Mw,nH]
-        relative_position_bias = self.relative_position_bias_table[self.relative_position_index.view(-1)].view(
+        indices = self.relative_position_index.view(-1)  # type: ignore
+        bias_table: torch.Tensor = self.relative_position_bias_table
+        relative_position_bias = bias_table[indices].view(
             self.window_size[0] * self.window_size[1], self.window_size[0] * self.window_size[1], -1)
         relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous()  # [nH, Mh*Mw, Mh*Mw]
         attn = attn + relative_position_bias.unsqueeze(0)
@@ -321,6 +323,8 @@ class SwinTransformerBlock(nn.Module):
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.H: int = 0
+        self.W: int = 0
 
     def forward(self, x, attn_mask):
         H, W = self.H, self.W
@@ -397,7 +401,7 @@ class BasicLayer(nn.Module):
 
     def __init__(self, dim, depth, num_heads, window_size,
                  mlp_ratio=4., qkv_bias=True, drop=0., attn_drop=0.,
-                 drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False):
+                 drop_path: Union[float, list[float]] = 0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False):
         super().__init__()
         self.dim = dim
         self.depth = depth
@@ -456,7 +460,7 @@ class BasicLayer(nn.Module):
         attn_mask = self.create_mask(x, H, W)  # [nW, Mh*Mw, Mh*Mw]
         for blk in self.blocks:
             blk.H, blk.W = H, W
-            if not torch.jit.is_scripting() and self.use_checkpoint:
+            if not torch.jit.is_scripting() and self.use_checkpoint:  # type: ignore[attr-defined]
                 x = checkpoint.checkpoint(blk, x, attn_mask)
             else:
                 x = blk(x, attn_mask)

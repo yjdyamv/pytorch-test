@@ -55,7 +55,7 @@ class ConfusionMatrix(object):
     def plot(self):
         matrix = self.matrix
         print(matrix)
-        plt.imshow(matrix, cmap=plt.cm.Blues)
+        plt.imshow(matrix, cmap=plt.get_cmap('Blues'))
 
         # 设置x轴坐标label
         plt.xticks(range(self.num_classes), self.labels, rotation=45)
@@ -73,7 +73,7 @@ class ConfusionMatrix(object):
             for y in range(self.num_classes):
                 # 注意这里的matrix[y, x]不是matrix[x, y]
                 info = int(matrix[y, x])
-                plt.text(x, y, info,
+                plt.text(x, y, str(info),
                          verticalalignment='center',
                          horizontalalignment='center',
                          color="white" if info > thresh else "black")
