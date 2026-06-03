@@ -15,3 +15,5 @@ flower_photos
 class_indices.json
 runs/
 weights/
+
+swin_tiny_patch4_window7_224.pth

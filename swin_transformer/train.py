@@ -46,9 +46,12 @@ def main(args):
     if batch_size is None:
         if device.type == "cuda":
             total_mem_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
-            if total_mem_gb > 7:       batch_size = 32
-            elif total_mem_gb >= 3.5:  batch_size = 16
-            else:                      batch_size = 8
+            if total_mem_gb > 7:
+                batch_size = 32
+            elif total_mem_gb >= 3.5:
+                batch_size = 24
+            else:
+                batch_size = 8
             print(f"Auto-detected batch_size: {batch_size} (GPU mem: {total_mem_gb:.1f}GB)")
         else:
             batch_size = 8
