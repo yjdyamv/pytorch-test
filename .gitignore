@@ -10,3 +10,8 @@ wheels/
 .venv
 
 flower_photos
+
+# Generated files
+class_indices.json
+runs/
+weights/
