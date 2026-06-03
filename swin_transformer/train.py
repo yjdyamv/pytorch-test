@@ -61,7 +61,15 @@ def main(args):
 
     model = create_model(num_classes=args.num_classes).to(device)
 
-    if args.weights != "":
+    start_epoch = 0
+    checkpoint = None
+    if args.resume:
+        assert os.path.exists(args.resume), "resume file: '{}' not exist.".format(args.resume)
+        checkpoint = torch.load(args.resume, map_location=device)
+        model.load_state_dict(checkpoint["model"])
+        start_epoch = checkpoint["epoch"] + 1
+        print("Resumed from checkpoint: '{}' (epoch {})".format(args.resume, checkpoint["epoch"]))
+    elif args.weights != "":
         assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
         weights_dict = torch.load(args.weights, map_location=device)["model"]
         # 删除有关分类类别的权重
@@ -70,7 +78,7 @@ def main(args):
                 del weights_dict[k]
         print(model.load_state_dict(weights_dict, strict=False))
 
-    if args.freeze_layers:
+    if args.freeze_layers and not args.resume:
         for name, para in model.named_parameters():
             # 除head外，其他权重全部冻结
             if "head" not in name:
@@ -81,7 +89,11 @@ def main(args):
     pg = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.AdamW(pg, lr=args.lr, weight_decay=5E-2)
 
-    for epoch in range(args.epochs):
+    if args.resume:
+        assert checkpoint is not None
+        optimizer.load_state_dict(checkpoint["optimizer"])
+
+    for epoch in range(start_epoch, args.epochs):
         # train
         train_loss, train_acc = train_one_epoch(model=model,
                                                 optimizer=optimizer,
@@ -102,7 +114,11 @@ def main(args):
         tb_writer.add_scalar(tags[3], val_acc, epoch)
         tb_writer.add_scalar(tags[4], optimizer.param_groups[0]["lr"], epoch)
 
-        torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
+        torch.save({
+            "model": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "epoch": epoch,
+        }, "./weights/model-{}.pth".format(epoch))
 
 
 if __name__ == '__main__':
@@ -122,6 +138,9 @@ if __name__ == '__main__':
                         help='initial weights path')
     # 是否冻结权重
     parser.add_argument('--freeze-layers', type=bool, default=False)
+    # 断点续训权重路径
+    parser.add_argument('--resume', type=str, default='',
+                        help='resume from checkpoint path')
     parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
 
     opt = parser.parse_args()
