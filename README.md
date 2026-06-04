@@ -4,6 +4,8 @@
 
 本仓库从 PyTorch 1.9 迁移至 **PyTorch 2.12** + **torchvision 0.27**，支持 CUDA 12.6，并使用 **uv** 作为包管理器，兼容 NumPy 2。
 
+对于pytorch 的 gpu版本使用的是 南大镜像 ，国内下载飞快。直接`uv sync`就可以恢复环境了。
+
 ## 下载
 
 ### 数据集
@@ -17,6 +19,8 @@
 ```bash
 curl -L -O https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth
 ```
+
+下载后放在项目根目录即可
 
 ## 快速开始
 
