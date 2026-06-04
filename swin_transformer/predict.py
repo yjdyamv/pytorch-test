@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 
 import torch
 from PIL import Image
@@ -9,8 +10,8 @@ import matplotlib.pyplot as plt
 from model import swin_tiny_patch4_window7_224 as create_model
 
 
-def main():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+def main(args):
+    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     img_size = 224
     data_transform = transforms.Compose(
@@ -20,9 +21,8 @@ def main():
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
     # load image
-    img_path = "../tulip.jpg"
-    assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
-    img = Image.open(img_path)
+    assert os.path.exists(args.img_path), "file: '{}' dose not exist.".format(args.img_path)
+    img = Image.open(args.img_path)
     plt.imshow(img)
     # [N, C, H, W]
     img = data_transform(img)
@@ -37,10 +37,14 @@ def main():
         class_indict = json.load(f)
 
     # create model
-    model = create_model(num_classes=5).to(device)
+    model = create_model(num_classes=args.num_classes).to(device)
     # load model weights
-    model_weight_path = "./weights/model-9.pth"
-    model.load_state_dict(torch.load(model_weight_path, map_location=device))
+    assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
+    checkpoint = torch.load(args.weights, map_location=device)
+    if "model" in checkpoint:
+        model.load_state_dict(checkpoint["model"])
+    else:
+        model.load_state_dict(checkpoint)
     model.eval()
     with torch.no_grad():
         # predict class
@@ -58,4 +62,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--img-path', type=str, required=True, help='image path to predict')
+    parser.add_argument('--num_classes', type=int, default=5)
+    parser.add_argument('--weights', type=str, default='./weights/model-9.pth', help='model weights path')
+    parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
+    opt = parser.parse_args()
+    main(opt)
+

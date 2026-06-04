@@ -11,7 +11,7 @@ from torchvision import transforms
 from tqdm import tqdm
 
 from my_dataset import MyDataSet
-from model import swin_base_patch4_window12_384_in22k as create_model
+from model import swin_tiny_patch4_window7_224 as create_model
 from utils import read_split_data
 
 
@@ -20,7 +20,7 @@ def main(args):
 
     _, _, val_images_path, val_images_label = read_split_data(args.data_path)
 
-    img_size = 384
+    img_size = 224
     data_transform = {
         "val": transforms.Compose([transforms.Resize(int(img_size * 1.143)),
                                    transforms.CenterCrop(img_size),
@@ -46,7 +46,11 @@ def main(args):
     model = create_model(num_classes=args.num_classes).to(device)
 
     assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
-    model.load_state_dict(torch.load(args.weights, map_location=device))
+    checkpoint = torch.load(args.weights, map_location=device)
+    if "model" in checkpoint:
+        model.load_state_dict(checkpoint["model"])
+    else:
+        model.load_state_dict(checkpoint)
 
     # read class_indict
     json_path = './class_indices.json'
@@ -94,3 +98,4 @@ if __name__ == '__main__':
     opt = parser.parse_args()
 
     main(opt)
+
