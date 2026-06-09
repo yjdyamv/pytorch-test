@@ -1,13 +1,12 @@
-import os
-import json
 import argparse
+import json
+import os
 
+import matplotlib.pyplot as plt
 import torch
+from model import swin_tiny_patch4_window7_224 as create_model
 from PIL import Image
 from torchvision import transforms
-import matplotlib.pyplot as plt
-
-from model import swin_tiny_patch4_window7_224 as create_model
 
 
 def main(args):
@@ -15,13 +14,18 @@ def main(args):
 
     img_size = 224
     data_transform = transforms.Compose(
-        [transforms.Resize(int(img_size * 1.14)),
-         transforms.CenterCrop(img_size),
-         transforms.ToTensor(),
-         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        [
+            transforms.Resize(int(img_size * 1.14)),
+            transforms.CenterCrop(img_size),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
 
     # load image
-    assert os.path.exists(args.img_path), "file: '{}' dose not exist.".format(args.img_path)
+    assert os.path.exists(args.img_path), "file: '{}' dose not exist.".format(
+        args.img_path
+    )
     img = Image.open(args.img_path)
     plt.imshow(img)
     # [N, C, H, W]
@@ -30,7 +34,7 @@ def main(args):
     img = torch.unsqueeze(img, dim=0)  # type: ignore[arg-type]
 
     # read class_indict
-    json_path = './class_indices.json'
+    json_path = "./class_indices.json"
     assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
 
     with open(json_path, "r") as f:
@@ -39,7 +43,9 @@ def main(args):
     # create model
     model = create_model(num_classes=args.num_classes).to(device)
     # load model weights
-    assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(args.weights)
+    assert os.path.exists(args.weights), "weights file: '{}' not exist.".format(
+        args.weights
+    )
     checkpoint = torch.load(args.weights, map_location=device)
     if "model" in checkpoint:
         model.load_state_dict(checkpoint["model"])
@@ -52,21 +58,33 @@ def main(args):
         predict = torch.softmax(output, dim=0)
         predict_cla = torch.argmax(predict).numpy()
 
-    print_res = "class: {}   prob: {:.3}".format(class_indict[str(predict_cla)],
-                                                 predict[predict_cla].numpy())
+    print_res = "class: {}   prob: {:.3}".format(
+        class_indict[str(predict_cla)], predict[predict_cla].numpy()
+    )
     plt.title(print_res)
     for i in range(len(predict)):
-        print("class: {:10}   prob: {:.3}".format(class_indict[str(i)],
-                                                  predict[i].numpy()))
+        print(
+            "class: {:10}   prob: {:.3}".format(
+                class_indict[str(i)], predict[i].numpy()
+            )
+        )
     plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img-path', type=str, required=True, help='image path to predict')
-    parser.add_argument('--num_classes', type=int, default=5)
-    parser.add_argument('--weights', type=str, default='./weights/model-9.pth', help='model weights path')
-    parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 or 0,1 or cpu)')
+    parser.add_argument(
+        "--img-path", type=str, required=True, help="image path to predict"
+    )
+    parser.add_argument("--num_classes", type=int, default=5)
+    parser.add_argument(
+        "--weights",
+        type=str,
+        default="./weights/model-9.pth",
+        help="model weights path",
+    )
+    parser.add_argument(
+        "--device", default="cuda:0", help="device id (i.e. 0 or 0,1 or cpu)"
+    )
     opt = parser.parse_args()
     main(opt)
-

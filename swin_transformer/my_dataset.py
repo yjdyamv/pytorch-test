@@ -1,5 +1,5 @@
-from PIL import Image
 import torch
+from PIL import Image
 from torch.utils.data import Dataset
 
 
@@ -17,8 +17,10 @@ class MyDataSet(Dataset):
     def __getitem__(self, index):
         img = Image.open(self.images_path[index])
         # RGB为彩色图片，L为灰度图片
-        if img.mode != 'RGB':
-            raise ValueError("image: {} isn't RGB mode.".format(self.images_path[index]))
+        if img.mode != "RGB":
+            raise ValueError(
+                "image: {} isn't RGB mode.".format(self.images_path[index])
+            )
         label = self.images_class[index]
 
         if self.transform is not None:
