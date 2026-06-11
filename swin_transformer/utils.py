@@ -9,6 +9,7 @@ import torch
 from tqdm import tqdm  # 提供了进度条的功能
 
 
+# 甚至都有类型标注（，大佬还是大佬啊
 def read_split_data(root: str, val_rate: float = 0.2):
     random.seed(0)  # 保证随机结果可复现
     assert os.path.exists(root), "dataset root: {} does not exist.".format(root)
@@ -17,9 +18,9 @@ def read_split_data(root: str, val_rate: float = 0.2):
     flower_class = [
         cla for cla in os.listdir(root) if os.path.isdir(os.path.join(root, cla))
     ]
-    # 排序，保证各平台顺序一致
+    # 排序，保证各平台顺序一致（别说，这点我没想到（（）
     flower_class.sort()
-    # 生成类别名称以及对应的数字索引
+    # 生成类别名称以及对应的数字索引，并写入到 class_indices.json文件里，供用户阅读
     class_indices = dict((k, v) for v, k in enumerate(flower_class))
     json_str = json.dumps(
         dict((val, key) for key, val in class_indices.items()), indent=4
@@ -82,9 +83,11 @@ def read_split_data(root: str, val_rate: float = 0.2):
         plt.title("flower class distribution")
         plt.show()
 
+    # 返回训练/验证数据的分类label和路径
     return train_images_path, train_images_label, val_images_path, val_images_label
 
 
+# 这个函数暂时用不到
 def plot_data_loader_image(data_loader):
     batch_size = data_loader.batch_size
     plot_num = min(batch_size, 4)
@@ -121,16 +124,18 @@ def read_pickle(file_name: str) -> list:
         return info_list
 
 
+# 一次训练的函数
 def train_one_epoch(model, optimizer, data_loader, device, epoch):
-    model.train()
-    loss_function = torch.nn.CrossEntropyLoss()
+    model.train()  # 这个函数的定义去
+    loss_function = torch.nn.CrossEntropyLoss()  # 损失函数 使用交叉熵
     accu_loss = torch.zeros(1).to(device)  # 累计损失
     accu_num = torch.zeros(1).to(device)  # 累计预测正确的样本数
-    optimizer.zero_grad()
+    optimizer.zero_grad()  # pytorch2 迁移的痕迹，可以让模型跑的更快
 
-    sample_num = 0
+    sample_num = 0  # 采样数量计数
+    # 数据加载并显示进度条
     data_loader = tqdm(data_loader, file=sys.stdout)
-    step = 0
+    step = 0  # step计数
     for step, data in enumerate(data_loader):
         images, labels = data
         sample_num += images.shape[0]
