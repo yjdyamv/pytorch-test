@@ -26,7 +26,7 @@ curl -L -O https://github.com/SwinTransformer/storage/releases/download/v1.0.0/s
 
 ```bash
 uv sync
-uv run swin_transformer/train.py --data-path ./flower_photos
+uv run swin_transformer/train.py --data-path ./flower_photos --weights "" --epochs 20
 uv run swin_transformer/predict.py --img-path <图片路径>
 ```
 
