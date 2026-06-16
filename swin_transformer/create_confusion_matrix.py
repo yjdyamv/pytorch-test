@@ -169,7 +169,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--weights",
         type=str,
-        default="./weights/model-19.pth",
+        default="./weights/model-9.pth",
         help="initial weights path",
     )
     # 是否冻结权重
