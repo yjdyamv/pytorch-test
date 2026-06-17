@@ -27,8 +27,42 @@ curl -L -O https://github.com/SwinTransformer/storage/releases/download/v1.0.0/s
 ```bash
 uv sync
 uv run swin_transformer/train.py --data-path ./flower_photos --weights "" --epochs 20 # 不使用预训练权重（不太推荐），推荐使用预训练权重
-uv run swin_transformer/predict.py --img-path <图片路径>
 ```
+
+## 单张图片预测
+
+训练完成后，使用训练好的权重对单张图片进行分类预测：
+
+```bash
+uv run swin_transformer/predict.py --img-path ./path/to/your/image.jpg --weights ./weights/model-9.pth --num_classes 5
+```
+
+参数说明：
+- `--img-path`：待预测图片的路径
+- `--weights`：训练好的模型权重路径（默认 `./weights/model-9.pth`）
+- `--num_classes`：类别数量（花分类数据集为 5）
+- `--device`：推理设备，默认 `cuda:0`，也可选 `cpu`
+
+脚本会输出每个类别的预测概率，并显示预测结果图片。
+
+## 混淆矩阵
+
+对验证集进行整体评估，生成混淆矩阵及 Precision / Recall / Specificity 指标：
+
+```bash
+uv run swin_transformer/create_confusion_matrix.py --data-path ./flower_photos --weights ./weights/model-9.pth --num_classes 5 --batch-size 8
+```
+
+参数说明：
+- `--data-path`：数据集路径（同训练时使用的 `--data-path`）
+- `--weights`：训练好的模型权重路径
+- `--num_classes`：类别数量
+- `--batch-size`：验证时的 batch size
+- `--device`：推理设备，默认 `cuda:0`
+
+脚本会：
+1. 绘制混淆矩阵热力图（横轴 True Labels，纵轴 Predicted Labels）
+2. 在终端输出每个类别的 Precision、Recall、Specificity 及整体准确率
 
 ## 模型变体
 
